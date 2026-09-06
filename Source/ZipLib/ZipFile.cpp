@@ -22,13 +22,13 @@ namespace
     }
   }
 
-  std::string MakeTempFilename(const std::string& fileName)
+  std::wstring MakeTempFilename(const std::wstring& fileName)
   {
-    return fileName + ".tmp";
+    return fileName + L".tmp";
   }
 }
 
-ZipArchive::Ptr ZipFile::Open(const std::string& zipPath)
+ZipArchive::Ptr ZipFile::Open(const std::wstring& zipPath)
 {
   std::ifstream* zipFile = new std::ifstream();
   zipFile->open(zipPath, std::ios::binary);
@@ -53,17 +53,17 @@ ZipArchive::Ptr ZipFile::Open(const std::string& zipPath)
   return ZipArchive::Create(zipFile, true);
 }
 
-void ZipFile::Save(ZipArchive::Ptr zipArchive, const std::string& zipPath)
+void ZipFile::Save(ZipArchive::Ptr zipArchive, const std::wstring& zipPath)
 {
   ZipFile::SaveAndClose(zipArchive, zipPath);
 
   zipArchive = ZipFile::Open(zipPath);
 }
 
-void ZipFile::SaveAndClose(ZipArchive::Ptr zipArchive, const std::string& zipPath)
+void ZipFile::SaveAndClose(ZipArchive::Ptr zipArchive, const std::wstring& zipPath)
 {
   // check if file exist
-  std::string tempZipPath = MakeTempFilename(zipPath);
+  std::wstring tempZipPath = MakeTempFilename(zipPath);
   std::ofstream outZipFile;
   outZipFile.open(tempZipPath, std::ios::binary | std::ios::trunc);
 
@@ -77,34 +77,34 @@ void ZipFile::SaveAndClose(ZipArchive::Ptr zipArchive, const std::string& zipPat
 
   zipArchive->InternalDestroy();
 
-  remove(zipPath.c_str());
-  rename(tempZipPath.c_str(), zipPath.c_str());
+  DeleteFileW(zipPath.c_str());
+  MoveFileW(tempZipPath.c_str(), zipPath.c_str());
 }
 
-bool ZipFile::IsInArchive(const std::string& zipPath, const std::string& fileName)
+bool ZipFile::IsInArchive(const std::wstring& zipPath, const std::string& fileName)
 {
   ZipArchive::Ptr zipArchive = ZipFile::Open(zipPath);
   return zipArchive->GetEntry(fileName) != nullptr;
 }
 
-void ZipFile::AddFile(const std::string& zipPath, const std::string& fileName, ICompressionMethod::Ptr method)
+void ZipFile::AddFile(const std::wstring& zipPath, const std::string& fileName, ICompressionMethod::Ptr method)
 {
   AddFile(zipPath, fileName, GetFilenameFromPath(fileName), method);
 }
 
-void ZipFile::AddFile(const std::string& zipPath, const std::string& fileName, const std::string& inArchiveName, ICompressionMethod::Ptr method)
+void ZipFile::AddFile(const std::wstring& zipPath, const std::string& fileName, const std::string& inArchiveName, ICompressionMethod::Ptr method)
 {
   AddEncryptedFile(zipPath, fileName, inArchiveName, std::string(), method);
 }
 
-void ZipFile::AddEncryptedFile(const std::string& zipPath, const std::string& fileName, const std::string& password, ICompressionMethod::Ptr method)
+void ZipFile::AddEncryptedFile(const std::wstring& zipPath, const std::string& fileName, const std::string& password, ICompressionMethod::Ptr method)
 {
   AddEncryptedFile(zipPath, fileName, GetFilenameFromPath(fileName), std::string(), method);
 }
 
-void ZipFile::AddEncryptedFile(const std::string& zipPath, const std::string& fileName, const std::string& inArchiveName, const std::string& password, ICompressionMethod::Ptr method)
+void ZipFile::AddEncryptedFile(const std::wstring& zipPath, const std::string& fileName, const std::string& inArchiveName, const std::string& password, ICompressionMethod::Ptr method)
 {
-  std::string tmpName = MakeTempFilename(zipPath);
+  std::wstring tmpName = MakeTempFilename(zipPath);
 
   {
     ZipArchive::Ptr zipArchive = ZipFile::Open(zipPath);
@@ -150,26 +150,26 @@ void ZipFile::AddEncryptedFile(const std::string& zipPath, const std::string& fi
     // force closing the input zip stream
   }
 
-  remove(zipPath.c_str());
-  rename(tmpName.c_str(), zipPath.c_str());
+  DeleteFileW(zipPath.c_str());
+  MoveFileW(tmpName.c_str(), zipPath.c_str());
 }
 
-void ZipFile::ExtractFile(const std::string& zipPath, const std::string& fileName)
+void ZipFile::ExtractFile(const std::wstring& zipPath, const std::string& fileName)
 {
   ExtractFile(zipPath, fileName, GetFilenameFromPath(fileName));
 }
 
-void ZipFile::ExtractFile(const std::string& zipPath, const std::string& fileName, const std::string& destinationPath)
+void ZipFile::ExtractFile(const std::wstring& zipPath, const std::string& fileName, const std::string& destinationPath)
 {
   ExtractEncryptedFile(zipPath, fileName, destinationPath, std::string());
 }
 
-void ZipFile::ExtractEncryptedFile(const std::string& zipPath, const std::string& fileName, const std::string& password)
+void ZipFile::ExtractEncryptedFile(const std::wstring& zipPath, const std::string& fileName, const std::string& password)
 {
   ExtractEncryptedFile(zipPath, fileName, GetFilenameFromPath(fileName), password);
 }
 
-void ZipFile::ExtractEncryptedFile(const std::string& zipPath, const std::string& fileName, const std::string& destinationPath, const std::string& password)
+void ZipFile::ExtractEncryptedFile(const std::wstring& zipPath, const std::string& fileName, const std::string& destinationPath, const std::string& password)
 {
   ZipArchive::Ptr zipArchive = ZipFile::Open(zipPath);
 
@@ -206,9 +206,9 @@ void ZipFile::ExtractEncryptedFile(const std::string& zipPath, const std::string
   destFile.close();
 }
 
-void ZipFile::RemoveEntry(const std::string& zipPath, const std::string& fileName)
+void ZipFile::RemoveEntry(const std::wstring& zipPath, const std::string& fileName)
 {
-  std::string tmpName = MakeTempFilename(zipPath);
+  std::wstring tmpName = MakeTempFilename(zipPath);
 
   {
     ZipArchive::Ptr zipArchive = ZipFile::Open(zipPath);
@@ -231,6 +231,6 @@ void ZipFile::RemoveEntry(const std::string& zipPath, const std::string& fileNam
     // force closing the input zip stream
   }
 
-  remove(zipPath.c_str());
-  rename(tmpName.c_str(), zipPath.c_str());
+  DeleteFileW(zipPath.c_str());
+  MoveFileW(tmpName.c_str(), zipPath.c_str());
 }
